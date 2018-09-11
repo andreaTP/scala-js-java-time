@@ -2,8 +2,6 @@ package java.time
 
 import java.time.chrono.IsoChronology
 
-import scala.scalajs.js
-
 import java.time.temporal._
 
 /** Created by alonsodomin on 22/12/2015. */
@@ -71,7 +69,7 @@ final class MonthDay private (month: Int, day: Int)
     if (month == getMonth()) {
       this
     } else {
-      val dayOfMonth = js.Math.min(day, month.maxLength())
+      val dayOfMonth = Math.min(day, month.maxLength())
       MonthDay.of(month, dayOfMonth)
     }
   }
@@ -90,7 +88,7 @@ final class MonthDay private (month: Int, day: Int)
 
   def adjustInto(temporal: Temporal): Temporal = {
     val temporalWithMonth = temporal.`with`(MONTH_OF_YEAR, month)
-    val dayOfMonth: Int = js.Math.min(day,
+    val dayOfMonth: Int = Math.min(day,
         temporalWithMonth.range(DAY_OF_MONTH).getMaximum.toInt)
     temporalWithMonth.`with`(DAY_OF_MONTH, dayOfMonth)
   }

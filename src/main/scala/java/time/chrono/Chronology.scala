@@ -1,7 +1,6 @@
 package java.time.chrono
 
 import scala.collection.JavaConverters._
-import scala.scalajs.js
 
 import java.time.{Period, DateTimeException}
 import java.time.temporal.{ValueRange, ChronoField, TemporalAccessor}
@@ -24,12 +23,8 @@ trait Chronology extends Comparable[Chronology] {
 
   def dateEpochDay(epochDay: Long): ChronoLocalDate
 
-  def dateNow(): ChronoLocalDate = {
-    val d = new js.Date()
-    date(d.getFullYear.toInt, d.getMonth.toInt, d.getDate.toInt)
-  }
-
   // Not implemented
+  // def dateNow(): ChronoLocalDate
   // def dateNow(zone: ZoneId): ChronoLocalDate
   // def dateNow(clock: Clock): ChronoLocalDate
 

@@ -1,7 +1,5 @@
 package java.time
 
-import scala.scalajs.js
-
 import java.time.Preconditions.requireDateTimeParse
 import java.time.chrono.IsoChronology
 import java.time.format.DateTimeParseException
@@ -319,7 +317,7 @@ object Instant {
   final val MAX = ofEpochSecond(MaxSecond, MaxNanosInSecond)
 
   def now(): Instant = {
-    val date = new js.Date()
+    val date = new java.util.Date()
     ofEpochMilli(date.getTime.toLong)
   }
 

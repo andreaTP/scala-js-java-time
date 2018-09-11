@@ -1,7 +1,5 @@
 package java.time
 
-import scala.scalajs.js
-
 import java.time.temporal._
 
 final class LocalTime private (hour: Int, minute: Int, second: Int, nano: Int)
@@ -322,8 +320,8 @@ object LocalTime {
   val NOON = new LocalTime(12, 0, 0, 0)
 
   def now(): LocalTime = {
-    val date = new js.Date()
-    val nano = date.getMilliseconds.toInt * 1000000
+    val date = new java.util.Date()
+    val nano = date.getTime.toInt * 1000000
     new LocalTime(date.getHours.toInt, date.getMinutes.toInt,
         date.getSeconds.toInt, nano)
   }

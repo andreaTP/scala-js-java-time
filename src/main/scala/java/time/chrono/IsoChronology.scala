@@ -34,9 +34,8 @@ final class IsoChronology private () extends AbstractChronology with Serializabl
   // def zonedDateTime(temporal: TemporalAccessor): ZonedDateTime
   // def zonedDateTime(instant: Instant, zone: ZoneId): ZonedDateTime
 
-  override def dateNow(): LocalDate = LocalDate.now()
-
   // Not implemented
+  // def dateNow(): LocalDate
   // def dateNow(zone: ZoneId): ChronoLocalDate
   // def dateNow(clock: Clock): ChronoLocalDate
 

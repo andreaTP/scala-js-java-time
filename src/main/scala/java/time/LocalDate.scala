@@ -1,7 +1,5 @@
 package java.time
 
-import scala.scalajs.js
-
 import java.time.chrono._
 import java.time.format.DateTimeParseException
 import java.time.temporal._
@@ -390,8 +388,9 @@ object LocalDate {
   final val MAX = new LocalDate(Year.MAX_VALUE, Month.DECEMBER, 31)
 
   def now(): LocalDate = {
-    val d = new js.Date()
-    of(d.getFullYear.toInt, d.getMonth.toInt + 1, d.getDate.toInt)
+    val d = new java.util.Date()
+    // of(d.getFullYear.toInt, d.getMonth.toInt + 1, d.getDate.toInt)
+    ofEpochDay(d.getTime)
   }
 
   // Not implemented

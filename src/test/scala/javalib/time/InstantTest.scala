@@ -1,0 +1,466 @@
+package org.scalajs.testsuite.javalib.time
+
+import java.time._
+import java.time.format.DateTimeParseException
+import java.time.temporal.{UnsupportedTemporalTypeException, ChronoUnit, ChronoField}
+
+import utest._
+
+object InstantTestUtils {
+  import DateTimeTestUtil._
+  import ChronoField._
+  import ChronoUnit._
+
+  val somePositiveInstant = Instant.ofEpochMilli(928392983942L)
+  val someNegativeInstant = Instant.ofEpochSecond(-83827873287L, 88936253)
+
+  def isSupported(unit: ChronoUnit): Boolean =
+    unit.isTimeBased || unit == DAYS
+
+  def isSupported(field: ChronoField): Boolean =
+    field == INSTANT_SECONDS || field == NANO_OF_SECOND || field == MICRO_OF_SECOND ||
+      field == MILLI_OF_SECOND
+
+}
+
+/** Created by alonsodomin on 26/12/2015. */
+object InstantTestTemporal extends TestSuite with TemporalTest[Instant] {
+  import DateTimeTestUtil._
+  import ChronoField._
+  import ChronoUnit._
+  import InstantTestUtils._
+
+  val samples = Seq(Instant.EPOCH, Instant.MIN, Instant.MAX,
+      somePositiveInstant, someNegativeInstant)
+
+  def isSupported(unit: ChronoUnit): Boolean = InstantTestUtils.isSupported(unit)
+
+  def isSupported(field: ChronoField): Boolean = InstantTestUtils.isSupported(field)
+  
+  val tests = temporalTests
+}
+
+object InstantTest extends TestSuite {
+  import DateTimeTestUtil._
+  import ChronoField._
+  import ChronoUnit._
+  import InstantTestUtils._
+
+  val samples = Seq(Instant.EPOCH, Instant.MIN, Instant.MAX,
+      somePositiveInstant, someNegativeInstant)
+
+  val tests = Tests {
+    'getLong - {
+      for (field <- ChronoField.values() if isSupported(field))
+        assert(0L == Instant.EPOCH.getLong(field))
+
+      assert(-31557014167219200L == Instant.MIN.getLong(INSTANT_SECONDS))
+      assert(0L == Instant.MIN.getLong(NANO_OF_SECOND))
+      assert(0L == Instant.MIN.getLong(MICRO_OF_SECOND))
+      assert(0L == Instant.MIN.getLong(MILLI_OF_SECOND))
+
+      assert(31556889864403199L == Instant.MAX.getLong(INSTANT_SECONDS))
+      assert(999999999L == Instant.MAX.getLong(NANO_OF_SECOND))
+      assert(999999L == Instant.MAX.getLong(MICRO_OF_SECOND))
+      assert(999L == Instant.MAX.getLong(MILLI_OF_SECOND))
+
+      assert(928392983L == somePositiveInstant.getLong(INSTANT_SECONDS))
+      assert(942000000L == somePositiveInstant.getLong(NANO_OF_SECOND))
+      assert(942000L == somePositiveInstant.getLong(MICRO_OF_SECOND))
+      assert(942L == somePositiveInstant.getLong(MILLI_OF_SECOND))
+
+      assert(-83827873287L == someNegativeInstant.getLong(INSTANT_SECONDS))
+      assert(88936253L == someNegativeInstant.getLong(NANO_OF_SECOND))
+      assert(88936L == someNegativeInstant.getLong(MICRO_OF_SECOND))
+      assert(88L == someNegativeInstant.getLong(MILLI_OF_SECOND))
+    }
+
+    'getEpochSecond - {
+      assert(0L == Instant.EPOCH.getEpochSecond)
+      assert(-31557014167219200L == Instant.MIN.getEpochSecond)
+      assert(31556889864403199L == Instant.MAX.getEpochSecond)
+      assert(928392983L == somePositiveInstant.getEpochSecond)
+      assert(-83827873287L == someNegativeInstant.getEpochSecond)
+    }
+
+    'getNano - {
+      assert(0 == Instant.EPOCH.getNano)
+      assert(0 == Instant.MIN.getNano)
+      assert(999999999 == Instant.MAX.getNano)
+      assert(942000000 == somePositiveInstant.getNano)
+      assert(88936253 == someNegativeInstant.getNano)
+    }
+
+    'with - {
+      for (i <- samples) {
+        for (value <- Seq(0L, 999L, 999999L, 999999999L)) {
+          assert(value == i.`with`(NANO_OF_SECOND, value).getLong(NANO_OF_SECOND))
+        }
+        for (value <- Seq(0L, 999L, 999999L)) {
+          assert(value == i.`with`(MICRO_OF_SECOND, value).getLong(MICRO_OF_SECOND))
+        }
+        for (value <- Seq(0L, 500L, 999L)) {
+          assert(value == i.`with`(MILLI_OF_SECOND, value).getLong(MILLI_OF_SECOND))
+        }
+        // TODO: breaks on Scala Native
+        // for (value <- Seq(-31557014167219200L, -1L, 0L, 1L, 31557014167219200L))
+        //   testDateTime(i.`with`(INSTANT_SECONDS, value).getLong(INSTANT_SECONDS))(value)
+
+        for (n <- Seq(Long.MinValue, -1L, 1000000000L, Long.MaxValue))
+          intercept[DateTimeException](i.`with`(NANO_OF_SECOND, n))
+        for (n <- Seq(Long.MinValue, -1L, 1000000L, Long.MaxValue))
+          intercept[DateTimeException](i.`with`(MICRO_OF_SECOND, n))
+        for (n <- Seq(Long.MinValue, -1L, 1000L, Long.MaxValue))
+          intercept[DateTimeException](i.`with`(MILLI_OF_SECOND, n))
+        for (n <- Seq(Long.MinValue, -31557014167219201L, 31557014167219201L, Long.MaxValue))
+          intercept[DateTimeException](i.`with`(INSTANT_SECONDS, n))
+      }
+    }
+
+    'truncatedTo - {
+      for (i <- samples)
+        assert(i == i.truncatedTo(NANOS))
+
+      assert(Instant.EPOCH == Instant.EPOCH.truncatedTo(MICROS))
+      assert(Instant.EPOCH == Instant.EPOCH.truncatedTo(MILLIS))
+      assert(Instant.EPOCH == Instant.EPOCH.truncatedTo(SECONDS))
+      assert(Instant.EPOCH == Instant.EPOCH.truncatedTo(DAYS))
+
+      assert(Instant.MIN == Instant.MIN.truncatedTo(MICROS))
+      assert(Instant.MIN == Instant.MIN.truncatedTo(MILLIS))
+      assert(Instant.MIN == Instant.MIN.truncatedTo(SECONDS))
+      assert(Instant.MIN == Instant.MIN.truncatedTo(DAYS))
+
+      assert(Instant.ofEpochSecond(31556889864403199L, 999999000) == Instant.MAX.truncatedTo(MICROS))
+      assert(Instant.ofEpochSecond(31556889864403199L, 999000000) == Instant.MAX.truncatedTo(MILLIS))
+      assert(Instant.ofEpochSecond(31556889864403199L) == Instant.MAX.truncatedTo(SECONDS))
+      assert(Instant.ofEpochSecond(31556889864316800L) == Instant.MAX.truncatedTo(DAYS))
+
+      assert(somePositiveInstant == somePositiveInstant.truncatedTo(MICROS))
+      assert(somePositiveInstant == somePositiveInstant.truncatedTo(MILLIS))
+      assert(Instant.ofEpochSecond(928392983L) == somePositiveInstant.truncatedTo(SECONDS))
+      assert(Instant.ofEpochSecond(928368000L) == somePositiveInstant.truncatedTo(DAYS))
+
+      assert(Instant.ofEpochSecond(-83827873287L, 88937000) == someNegativeInstant.truncatedTo(MICROS))
+      assert(Instant.ofEpochSecond(-83827873287L, 89000000) == someNegativeInstant.truncatedTo(MILLIS))
+      assert(Instant.ofEpochSecond(-83827873286L) == someNegativeInstant.truncatedTo(SECONDS))
+      assert(Instant.ofEpochSecond(-83827872000L) == someNegativeInstant.truncatedTo(DAYS))
+
+      for (i <- samples;u <- dateBasedUnits.filter(_ != DAYS))
+        intercept[UnsupportedTemporalTypeException](i.truncatedTo(u))
+    }
+
+    'plus - {
+      for {
+        i <- samples
+        u <- ChronoUnit.values() if isSupported(u)
+      } {
+        assert(i == i.plus(0, u))
+
+        for (n <- Seq(-1000, -1, 1, 1000)) {
+          if (!(i == Instant.MIN && n < 0) && !(i == Instant.MAX && n > 0))
+            assert(i.plusNanos(u.getDuration.toNanos * n) == i.plus(n, u))
+          else if ((i == Instant.MIN && n < 0) && (i == Instant.MAX && n > 0))
+            intercept[DateTimeException](i.plus(n, u))
+        }
+      }
+    }
+
+    'plusSeconds - {
+      for (i <- samples)
+        assert(i == i.plusSeconds(0))
+
+      assert(Instant.ofEpochSecond(1) == Instant.EPOCH.plusSeconds(1))
+      assert(Instant.ofEpochSecond(-1) == Instant.EPOCH.plusSeconds(-1))
+
+      assert(Instant.ofEpochSecond(-31557014167219199L) == Instant.MIN.plusSeconds(1))
+      intercept[DateTimeException](Instant.MIN.plusSeconds(-1))
+      assert(Instant.EPOCH == Instant.MIN.plusSeconds(31557014167219200L))
+
+      intercept[DateTimeException](Instant.MAX.plusSeconds(1))
+      assert(Instant.ofEpochSecond(31556889864403198L, 999999999) == Instant.MAX.plusSeconds(-1))
+      assert(Instant.ofEpochSecond(0, 999999999) == Instant.MAX.plusSeconds(-31556889864403199L))
+
+      assert(Instant.ofEpochSecond(928392984L, 942000000) == somePositiveInstant.plusSeconds(1))
+      assert(Instant.ofEpochSecond(928392982L, 942000000) == somePositiveInstant.plusSeconds(-1))
+
+      assert(Instant.ofEpochSecond(-83827873286L, 88936253) == someNegativeInstant.plusSeconds(1))
+      assert(Instant.ofEpochSecond(-83827873288L, 88936253) == someNegativeInstant.plusSeconds(-1))
+    }
+
+    'plusMillis - {
+      for (i <- samples)
+        assert(i == i.plusMillis(0))
+
+      assert(Instant.ofEpochMilli(1) == Instant.EPOCH.plusMillis(1))
+      assert(Instant.ofEpochMilli(-1) == Instant.EPOCH.plusMillis(-1))
+
+      assert(Instant.ofEpochSecond(-31557014167219200L, 1000000) == Instant.MIN.plusMillis(1))
+      assert(Instant.ofEpochSecond(-31557014167219199L, 0) == Instant.MIN.plusMillis(1000))
+      intercept[DateTimeException](Instant.MIN.plusMillis(-1))
+
+      intercept[DateTimeException](Instant.MAX.plusMillis(1))
+      assert(Instant.ofEpochSecond(31556889864403199L, 998999999) == Instant.MAX.plusMillis(-1))
+      assert(Instant.ofEpochSecond(31556889864403198L, 999999999) == Instant.MAX.plusMillis(-1000))
+
+      assert(Instant.ofEpochSecond(928392983L, 943000000) == somePositiveInstant.plusMillis(1))
+      assert(Instant.ofEpochSecond(928392983L, 941000000) == somePositiveInstant.plusMillis(-1))
+
+      assert(Instant.ofEpochSecond(-83827873287L, 89936253) == someNegativeInstant.plusMillis(1))
+      assert(Instant.ofEpochSecond(-83827873287L, 87936253) == someNegativeInstant.plusMillis(-1))
+    }
+
+    'plusNanos - {
+      for (i <- samples)
+        assert(i == i.plusNanos(0))
+
+      assert(Instant.ofEpochSecond(0, 1) == Instant.EPOCH.plusNanos(1))
+      assert(Instant.ofEpochSecond(-1, 999999999) == Instant.EPOCH.plusNanos(-1))
+
+      assert(Instant.ofEpochSecond(-31557014167219200L, 1) == Instant.MIN.plusNanos(1))
+      assert(Instant.ofEpochSecond(-31557014167219199L, 0) == Instant.MIN.plusNanos(1000000000))
+      intercept[DateTimeException](Instant.MIN.plusNanos(-1))
+
+      intercept[DateTimeException](Instant.MAX.plusMillis(1))
+      assert(Instant.ofEpochSecond(31556889864403199L, 999999998) == Instant.MAX.plusNanos(-1))
+      assert(Instant.ofEpochSecond(31556889864403198L, 999999999) == Instant.MAX.plusNanos(-1000000000))
+
+      assert(Instant.ofEpochSecond(928392983L, 942000001) == somePositiveInstant.plusNanos(1))
+      assert(Instant.ofEpochSecond(928392983L, 941999999) == somePositiveInstant.plusNanos(-1))
+
+      assert(Instant.ofEpochSecond(-83827873287L, 88936254) == someNegativeInstant.plusNanos(1))
+      assert(Instant.ofEpochSecond(-83827873287L, 88936252) == someNegativeInstant.plusNanos(-1))
+    }
+
+    'minusSeconds - {
+      for (i <- samples)
+        assert(i == i.minusSeconds(0))
+
+      assert(Instant.ofEpochSecond(-1) == Instant.EPOCH.minusSeconds(1))
+      assert(Instant.ofEpochSecond(1) == Instant.EPOCH.minusSeconds(-1))
+
+      intercept[DateTimeException](Instant.MIN.minusSeconds(1))
+      assert(Instant.ofEpochSecond(-31557014167219199L) == Instant.MIN.minusSeconds(-1))
+      assert(Instant.EPOCH == Instant.MIN.minusSeconds(-31557014167219200L))
+
+      assert(Instant.ofEpochSecond(31556889864403198L, 999999999) == Instant.MAX.minusSeconds(1))
+      intercept[DateTimeException](Instant.MAX.minusSeconds(-1))
+      assert(Instant.ofEpochSecond(0, 999999999) == Instant.MAX.minusSeconds(31556889864403199L))
+
+      assert(Instant.ofEpochSecond(928392982L, 942000000) == somePositiveInstant.minusSeconds(1))
+      assert(Instant.ofEpochSecond(928392984L, 942000000) == somePositiveInstant.minusSeconds(-1))
+
+      assert(Instant.ofEpochSecond(-83827873288L, 88936253) == someNegativeInstant.minusSeconds(1))
+      assert(Instant.ofEpochSecond(-83827873286L, 88936253) == someNegativeInstant.minusSeconds(-1))
+    }
+
+    'minusMillis - {
+      for (i <- samples)
+        assert(i == i.minusMillis(0))
+
+      assert(Instant.ofEpochMilli(-1) == Instant.EPOCH.minusMillis(1))
+      assert(Instant.ofEpochMilli(1) == Instant.EPOCH.minusMillis(-1))
+
+      intercept[DateTimeException](Instant.MIN.minusMillis(1))
+      assert(Instant.ofEpochSecond(-31557014167219200L, 1000000) == Instant.MIN.minusMillis(-1))
+      assert(Instant.ofEpochSecond(-31557014167219199L, 0) == Instant.MIN.minusMillis(-1000))
+
+      assert(Instant.ofEpochSecond(31556889864403199L, 998999999) == Instant.MAX.minusMillis(1))
+      assert(Instant.ofEpochSecond(31556889864403198L, 999999999) == Instant.MAX.minusMillis(1000))
+      intercept[DateTimeException](Instant.MAX.minusMillis(-1))
+
+      assert(Instant.ofEpochSecond(928392983L, 941000000) == somePositiveInstant.minusMillis(1))
+      assert(Instant.ofEpochSecond(928392983L, 943000000) == somePositiveInstant.minusMillis(-1))
+
+      assert(Instant.ofEpochSecond(-83827873287L, 87936253) == someNegativeInstant.minusMillis(1))
+      assert(Instant.ofEpochSecond(-83827873287L, 89936253) == someNegativeInstant.minusMillis(-1))
+    }
+
+    'minusNanos - {
+      for (i <- samples)
+        assert(i == i.minusNanos(0))
+
+      assert(Instant.ofEpochSecond(-1, 999999999) == Instant.EPOCH.minusNanos(1))
+      assert(Instant.ofEpochSecond(0, 1) == Instant.EPOCH.minusNanos(-1))
+
+      intercept[DateTimeException](Instant.MIN.minusNanos(1))
+      assert(Instant.ofEpochSecond(-31557014167219200L, 1) == Instant.MIN.minusNanos(-1))
+      assert(Instant.ofEpochSecond(-31557014167219199L, 0) == Instant.MIN.minusNanos(-1000000000))
+
+      assert(Instant.ofEpochSecond(31556889864403199L, 999999998) == Instant.MAX.minusNanos(1))
+      assert(Instant.ofEpochSecond(31556889864403198L, 999999999) == Instant.MAX.minusNanos(1000000000))
+      intercept[DateTimeException](Instant.MAX.minusNanos(-1))
+
+      assert(Instant.ofEpochSecond(928392983L, 941999999) == somePositiveInstant.minusNanos(1))
+      assert(Instant.ofEpochSecond(928392983L, 942000001) == somePositiveInstant.minusNanos(-1))
+
+      assert(Instant.ofEpochSecond(-83827873287L, 88936252) == someNegativeInstant.minusNanos(1))
+      assert(Instant.ofEpochSecond(-83827873287L, 88936254) == someNegativeInstant.minusNanos(-1))
+    }
+
+    'adjustInto - {
+      for {
+        i1 <- samples
+        i2 <- samples
+      } {
+        testDateTime(i1.adjustInto(i2))(i1)
+      }
+
+      for {
+        i <- samples
+        date <- Seq(LocalDate.MIN, LocalDate.MAX)
+      } {
+        intercept[DateTimeException](i.adjustInto(date))
+      }
+    }
+
+    'until - {
+      intercept[ArithmeticException](Instant.MIN.until(Instant.MAX, NANOS))
+      intercept[ArithmeticException](Instant.MIN.until(Instant.MAX, MICROS))
+      intercept[ArithmeticException](Instant.MIN.until(Instant.MAX, MILLIS))
+
+      assert(31557014167219200L == Instant.MIN.until(Instant.EPOCH, SECONDS))
+      assert(525950236120320L == Instant.MIN.until(Instant.EPOCH, MINUTES))
+      assert(8765837268672L == Instant.MIN.until(Instant.EPOCH, HOURS))
+      assert(730486439056L == Instant.MIN.until(Instant.EPOCH, HALF_DAYS))
+      assert(365243219528L == Instant.MIN.until(Instant.EPOCH, DAYS))
+
+      assert(-31556889864403199L == Instant.MAX.until(Instant.EPOCH, SECONDS))
+      assert(-525948164406719L == Instant.MAX.until(Instant.EPOCH, MINUTES))
+      assert(-8765802740111L == Instant.MAX.until(Instant.EPOCH, HOURS))
+      assert(-730483561675L == Instant.MAX.until(Instant.EPOCH, HALF_DAYS))
+      assert(-365241780837L == Instant.MAX.until(Instant.EPOCH, DAYS))
+
+      assert(63113904031622399L == Instant.MIN.until(Instant.MAX, SECONDS))
+      assert(1051898400527039L == Instant.MIN.until(Instant.MAX, MINUTES))
+      assert(17531640008783L == Instant.MIN.until(Instant.MAX, HOURS))
+      assert(1460970000731L == Instant.MIN.until(Instant.MAX, HALF_DAYS))
+      assert(730485000365L == Instant.MIN.until(Instant.MAX, DAYS))
+
+      assert(84756266270854L == someNegativeInstant.until(somePositiveInstant, MILLIS))
+      assert(84756266270L == someNegativeInstant.until(somePositiveInstant, SECONDS))
+      assert(1412604437L == someNegativeInstant.until(somePositiveInstant, MINUTES))
+      assert(23543407L == someNegativeInstant.until(somePositiveInstant, HOURS))
+      assert(1961950L == someNegativeInstant.until(somePositiveInstant, HALF_DAYS))
+      assert(980975L == someNegativeInstant.until(somePositiveInstant, DAYS))
+    }
+
+    'compareTo - {
+      for (i <- samples)
+        assert(0 == i.compareTo(i))
+
+      assert(Instant.MIN.compareTo(Instant.MAX) < 0)
+      assert(Instant.MIN.compareTo(Instant.EPOCH) < 0)
+      assert(Instant.MAX.compareTo(Instant.MIN) > 0)
+      assert(Instant.MAX.compareTo(Instant.EPOCH) > 0)
+    }
+
+    'isAfter - {
+      assert(Instant.MIN.isAfter(Instant.MIN) == false)
+      assert(Instant.MIN.isAfter(Instant.MAX) == false)
+      assert(Instant.MIN.isAfter(Instant.EPOCH) == false)
+      assert(Instant.MAX.isAfter(Instant.MIN))
+      assert(Instant.MAX.isAfter(Instant.MAX) == false)
+      assert(Instant.MAX.isAfter(Instant.EPOCH))
+    }
+
+    'isBefore - {
+      assert(Instant.MIN.isBefore(Instant.MIN) == false)
+      assert(Instant.MIN.isBefore(Instant.MAX))
+      assert(Instant.MIN.isBefore(Instant.EPOCH))
+      assert(Instant.MAX.isBefore(Instant.MIN) == false)
+      assert(Instant.MAX.isBefore(Instant.MAX) == false)
+      assert(Instant.MAX.isBefore(Instant.EPOCH) == false)
+    }
+
+    'toEpochMilli - {
+      assert(0L == Instant.EPOCH.toEpochMilli)
+      assert(928392983942L == somePositiveInstant.toEpochMilli)
+      assert(-83827873286912L == someNegativeInstant.toEpochMilli)
+    }
+
+    'toStringOutput - {
+      assert("1970-01-01T00:00:00Z" == Instant.EPOCH.toString)
+      assert("-1000000000-01-01T00:00:00Z" == Instant.MIN.toString)
+      assert("-999999999-01-01T00:00:00Z" == Instant.MIN.plus(366, DAYS).toString)
+
+      // https://github.com/scala-js/scala-js-java-time/issues/23
+      assert("1970-01-01T00:10:00.100Z" == Instant.EPOCH.plus(10, MINUTES).plusMillis(100).toString)
+
+      assert("+1000000000-12-31T23:59:59.999999999Z" == Instant.MAX.toString)
+      assert("+999999999-12-31T23:59:59.999999999Z" == Instant.MAX.minus(366, DAYS).toString)
+
+      assert("1999-06-03T06:56:23.942Z" == somePositiveInstant.toString)
+      assert("-0687-08-07T23:38:33.088936253Z" == someNegativeInstant.toString)
+    }
+
+    'now - {
+      assert(Instant.now != null)
+    }
+
+    'ofEpochSecond - {
+      assert(Instant.EPOCH == Instant.ofEpochSecond(0))
+      assert(Instant.EPOCH == Instant.ofEpochSecond(0, 0))
+
+      assert(Instant.MIN == Instant.ofEpochSecond(-31557014167219200L))
+      assert(Instant.MIN == Instant.ofEpochSecond(-31557014167219200L, 0))
+      assert(Instant.MAX == Instant.ofEpochSecond(31556889864403199L, 999999999))
+
+      intercept[DateTimeException](Instant.ofEpochSecond(-31557014167219200L, Long.MinValue))
+
+      val limits = Seq(-31557014167219200L, 31557014167219200L)
+      val invalidNanos = Seq(Long.MinValue, -1L, 1000000000L, Long.MaxValue)
+
+      val invalidPairs = limits.flatMap(l => invalidNanos.map(n => (l, n))).filter {
+        case (a, b) => ((a < 0) && (b < 0)) || ((a > 0) && (b > 0))
+      }
+      for ((s, n) <- invalidPairs)
+        intercept[DateTimeException](Instant.ofEpochSecond(s, n))
+    }
+
+    'ofEpochMilli - {
+      assert(Instant.EPOCH == Instant.ofEpochMilli(0))
+    }
+
+    'from - {
+      for (i <- samples)
+        assert(i == Instant.from(i))
+
+      val aTime = LocalTime.ofNanoOfDay(98392983293L)
+      intercept[DateTimeException](Instant.from(aTime))
+
+      val aDate = LocalDate.ofEpochDay(392889321L)
+      intercept[DateTimeException](Instant.from(aDate))
+
+      val aYear = Year.of(329)
+      intercept[DateTimeException](Instant.from(aYear))
+    }
+
+    'parse - {
+      assert(Instant.EPOCH == Instant.parse("1970-01-01T00:00:00Z"))
+      assert(Instant.MIN == Instant.parse("-1000000000-01-01T00:00:00Z"))
+      assert(Instant.MIN.plus(366, DAYS) == Instant.parse("-999999999-01-01T00:00:00Z"))
+
+      // https://github.com/scala-js/scala-js-java-time/issues/23
+      assert(Instant.EPOCH.plus(10, MINUTES).plusMillis(100) == Instant.parse("1970-01-01T00:10:00.100Z"))
+
+      assert(Instant.MAX == Instant.parse("+1000000000-12-31T23:59:59.999999999Z"))
+      assert(Instant.MAX.minus(366, DAYS) == Instant.parse("+999999999-12-31T23:59:59.999999999Z"))
+
+      assert(somePositiveInstant == Instant.parse("1999-06-03T06:56:23.942Z"))
+      assert(someNegativeInstant == Instant.parse("-0687-08-07T23:38:33.088936253Z"))
+
+      val charSequence: CharSequence = "1999-06-03T06:56:23.942Z".toCharArray
+      assert(somePositiveInstant == Instant.parse(charSequence))
+
+      intercept[DateTimeParseException](Instant.parse("+1000000001-12-31T23:59:59.999999999Z"))
+      intercept[DateTimeParseException](Instant.parse("-0687-99-07T23:38:33.088936253Z"))
+      intercept[DateTimeParseException](Instant.parse("-ABCD-08-07T23:38:33.088936253Z"))
+      intercept[DateTimeParseException](Instant.parse("1999-06-03T13:56:90.942Z"))
+      intercept[DateTimeParseException](Instant.parse("1999-06-03T13:65:23.942Z"))
+      intercept[DateTimeParseException](Instant.parse("1999-06-03T25:56:23.942Z"))
+      intercept[DateTimeParseException](Instant.parse("1999-06-99T13:56:23.942Z"))
+      intercept[DateTimeParseException](Instant.parse("1999-99-03T13:56:23.942Z"))
+    }
+  }
+}

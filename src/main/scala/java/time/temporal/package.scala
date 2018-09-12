@@ -2,6 +2,7 @@ package java.time
 
 package object temporal {
   private[time] def toScreamingSnakeCase(s: String): String = {
+    // TODO: replaceAll with reg-ex is not working correctly in scala native
     val s1 = {
       var tmp = s
       for (l <- ('A' to 'Z'))

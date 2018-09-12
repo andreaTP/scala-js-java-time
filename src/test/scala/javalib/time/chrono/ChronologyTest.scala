@@ -12,16 +12,13 @@ object ChronologyTest extends TestSuite {
 
     'test_of - {
       assert(IsoChronology.INSTANCE == of("ISO"))
+      intercept[DateTimeException](of(""))
     }
 
+    'test_getAvailableChronologies - {
+      val chronologies = Chronology.getAvailableChronologies
+      assert(chronologies.contains(IsoChronology.INSTANCE))
+    }
   }
-  // @Test def test_of(): Unit = {
-  //   assertEquals(IsoChronology.INSTANCE, of("ISO"))
-  //   expectThrows(classOf[DateTimeException], of(""))
-  // }
 
-  // @Test def test_getAvailableChronologies(): Unit = {
-  //   val chronologies = Chronology.getAvailableChronologies
-  //   assertTrue(chronologies.contains(IsoChronology.INSTANCE))
-  // }
 }

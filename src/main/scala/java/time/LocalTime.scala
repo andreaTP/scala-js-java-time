@@ -319,14 +319,13 @@ object LocalTime {
 
   val NOON = new LocalTime(12, 0, 0, 0)
 
-  def now(): LocalTime = {
-    val date = new java.util.Date()
-    val nano = date.getTime.toInt * 1000000
-    new LocalTime(date.getHours.toInt, date.getMinutes.toInt,
-        date.getSeconds.toInt, nano)
-  }
-
   // Not implemented
+  // def now(): LocalTime = {
+  //   val date = new java.util.Date()
+  //   val nano = date.getTime.toInt * 1000000
+  //   new LocalTime(date.getHours.toInt, date.getMinutes.toInt,
+  //       date.getSeconds.toInt, nano)
+  // }
   // def now(zone: ZoneId): LocalTime
 
   // Not implemented

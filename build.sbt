@@ -1,18 +1,17 @@
+import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
-enablePlugins(ScalaNativePlugin)
+lazy val root = crossProject(JVMPlatform, NativePlatform)
+    .in(file("."))
+    .enablePlugins(ScalaNativePlugin)
+    .settings(
+      organization := "org.akka-js",
+      name := "scalanative-java-time",
+      scalaVersion := "2.11.12",
+      scalacOptions += "-target:jvm-1.8",
+      nativeLinkStubs := true,
+      testFrameworks += new TestFramework("utest.runner.Framework"),
+      libraryDependencies += "com.lihaoyi" %%% "utest" % "0.6.3" % "test"
+    )
 
-scalaVersion := "2.11.12"
-
-organization := "org.akka-js"
-
-name := "scalanative-java-time"
-
-testFrameworks += new TestFramework("utest.runner.Framework")
-
-scalacOptions += "-target:jvm-1.8"
-
-libraryDependencies ++= Seq(
-  "com.lihaoyi" %%% "utest" % "0.6.3" % "test"
-)
-
-nativeLinkStubs := true
+lazy val rootJVM = root.jvm
+lazy val rootNative = root.native
